@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Decrypt File</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="scripts.js" defer></script>
+</head>
+<body>
+    <nav>
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="registration.html">Register</a></li>
+            <li><a href="login.html">Login</a></li>
+            <li><a href="upload.html">Upload</a></li>
+            <li><a href="decrypt.html">Decrypt</a></li>
+        </ul>
+    </nav>
+    <div class="form-container">
+        <h2>Decrypt File</h2>
+        <form id="decrypt-form" method="POST" action="/decrypt">
+            <label for="encryptionKey">Encryption Key:</label>
+            <input type="text" id="encryptionKey" name="encryptionKey" required>
+            <label for="s3FileKey">S3 File Key:</label>
+            <input type="text" id="s3FileKey" name="s3FileKey" required>
+            <button type="submit">Decrypt</button>
+        </form>        
+    </div>
+</body>
+</html>
