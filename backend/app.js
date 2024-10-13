@@ -1,6 +1,5 @@
 require('dotenv').config();
 const express = require('express');
-const dotenv = require('dotenv');
 const mysql = require('mysql');
 const bcrypt = require('bcrypt');
 const path = require('path');
@@ -15,6 +14,7 @@ const { uploadFileToS3, downloadFileFromS3 } = require('./aws');
 const fs = require('fs');
 const cors = require('cors');
 const https = require('https');
+const os = require('os');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -29,6 +29,7 @@ app.use(session({
     secret: process.env.SESSION_SECRET || 'your-secret-key',
     resave: false,
     saveUninitialized: true,
+    cookie: { secure: true } // Use secure cookies in production with HTTPS
 }));
 
 const options = {
@@ -36,57 +37,82 @@ const options = {
     cert: fs.readFileSync('./localhost.pem')
 };
 
+// User Registration
 app.post('/register', async (req, res) => {
     const { email, password } = req.body;
 
     try {
         const checkQuery = 'SELECT * FROM users WHERE email = ?';
         db.query(checkQuery, [email], async (err, results) => {
-            if (err) return res.status(500).json({ message: 'Error checking user.' });
-            if (results.length > 0) return res.status(400).json({ message: 'Email already exists.' });
+            if (err) {
+                console.error('Error checking user:', err);
+                return res.status(500).json({ message: 'Error checking user.' });
+            }
+            if (results.length > 0) {
+                return res.status(400).json({ message: 'Email already exists.' });
+            }
 
             const hashedPassword = await bcrypt.hash(password, 10);
             const insertQuery = 'INSERT INTO users (email, password) VALUES (?, ?)';
             db.query(insertQuery, [email, hashedPassword], (err) => {
-                if (err) return res.status(500).json({ message: 'Error registering user.' });
+                if (err) {
+                    console.error('Error registering user:', err);
+                    return res.status(500).json({ message: 'Error registering user.' });
+                }
                 req.session.user = { email };
                 return res.status(200).json({ message: 'User registered successfully!' });
             });
         });
     } catch (error) {
+        console.error('Internal server error:', error);
         return res.status(500).json({ message: 'Internal server error.' });
     }
 });
 
+// User Login
 app.post('/login', (req, res) => {
     const { email, password } = req.body;
 
     const query = 'SELECT * FROM users WHERE email = ?';
     db.query(query, [email], async (err, results) => {
-        if (err) return res.status(500).json({ message: 'Error logging in.' });
-        if (results.length === 0) return res.status(400).json({ message: 'Invalid email or password.' });
+        if (err) {
+            console.error('Error logging in:', err);
+            return res.status(500).json({ message: 'Error logging in.' });
+        }
+        if (results.length === 0) {
+            return res.status(400).json({ message: 'Invalid email or password.' });
+        }
 
         const user = results[0];
         const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) return res.status(400).json({ message: 'Invalid email or password.' });
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Invalid email or password.' });
+        }
 
         req.session.user = { email };
         return res.status(200).json({ message: 'Login successful!' });
     });
 });
 
+// File Upload
 app.post('/upload', async (req, res) => {
-    if (!req.files || !req.files.file) return res.status(400).json({ message: 'No file uploaded.' });
+    if (!req.files || !req.files.file) {
+        return res.status(400).json({ message: 'No file uploaded.' });
+    }
 
     const { email } = req.body;
     const file = req.files.file;
     const encryptionKey = blowfish.generateKey();
     const s3FileKey = crypto.randomBytes(16).toString('hex');
 
-    const uploadPath = path.join(__dirname, 'uploads', file.name);
+    // Use a temporary path for the uploaded file
+    const uploadPath = path.join(os.tmpdir(), file.name);
 
     file.mv(uploadPath, async (err) => {
-        if (err) return res.status(500).json({ message: 'File upload failed.' });
+        if (err) {
+            console.error('File upload failed:', err);
+            return res.status(500).json({ message: 'File upload failed.' });
+        }
 
         try {
             await blowfish.encryptFile(uploadPath, uploadPath, encryptionKey);
@@ -101,54 +127,69 @@ app.post('/upload', async (req, res) => {
                 await mailer.send(email, 'Your Encryption Keys', emailContent);
                 res.status(200).json({ message: 'File uploaded and encrypted successfully! An email with your encryption key and S3 file key has been sent to the provided email.' });
             } catch (emailError) {
+                console.error('Email sending failed:', emailError);
                 return res.status(500).json({ message: 'File uploaded, but email sending failed.' });
             }
-
         } catch (err) {
+            console.error('Error during file processing:', err);
             res.status(500).json({ message: 'File upload failed.' });
         }
     });
 });
 
+// File Decryption
 app.post('/decrypt', async (req, res) => {
     const { encryptionKey, s3FileKey } = req.body;
 
-    if (!encryptionKey || !s3FileKey) return res.status(400).json({ message: 'Please provide both encryption key and S3 file key.' });
+    if (!encryptionKey || !s3FileKey) {
+        return res.status(400).json({ message: 'Please provide both encryption key and S3 file key.' });
+    }
 
     try {
-        const filePath = path.join(__dirname, 'downloads', `${s3FileKey}.encrypted`);
+        const filePath = path.join(os.tmpdir(), `${s3FileKey}.encrypted`); // Use temp directory
 
         const downloadResult = await downloadFileFromS3(s3FileKey, process.env.AWS_BUCKET_NAME, filePath);
-
-        if (!downloadResult) return res.status(500).json({ message: 'Failed to download the file from S3.' });
+        if (!downloadResult) {
+            return res.status(500).json({ message: 'Failed to download the file from S3.' });
+        }
 
         const decryptedFilePath = filePath.replace('.encrypted', '');
         await blowfish.decryptFile(filePath, decryptedFilePath, encryptionKey);
 
         res.download(decryptedFilePath, (err) => {
-            if (err) return res.status(500).json({ message: 'Error downloading the file.' });
+            if (err) {
+                console.error('Error downloading the file:', err);
+                return res.status(500).json({ message: 'Error downloading the file.' });
+            }
 
+            // Clean up decrypted file after download
             fs.unlink(decryptedFilePath, (err) => {
                 if (err) console.error('Error deleting decrypted file:', err);
             });
         });
     } catch (error) {
+        console.error('Error during decryption process:', error);
         res.status(500).json({ message: 'Error during decryption process.' });
     }
 });
 
+// 404 Handler
 app.use((req, res) => {
     res.status(404).send('404 Not Found');
 });
 
+// Global Error Handler
 app.use((err, req, res, next) => {
+    console.error('Something broke:', err);
     res.status(500).send('Something broke!');
 });
 
+// Root Route
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
 
+// Start HTTPS Server
 https.createServer(options, app).listen(PORT, () => {
     console.log(`Server is running on https://localhost:${PORT}`);
 });
