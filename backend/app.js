@@ -187,12 +187,8 @@ app.get('/', (req, res) => {
 });
 
 
-// https.createServer(options, app).listen(PORT, () => {
-//     console.log(`Server is running on https://localhost:${PORT}`);
-// });
-https.createServer(options, app).listen(PORT, '0.0.0.0', () => {
+https.createServer(options, app).listen(PORT, () => {
     console.log(`Server is running on https://localhost:${PORT}`);
 });
-
 
 app.get('/favicon.ico', (req, res) => res.status(204));
