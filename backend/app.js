@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const dotenv = require('dotenv');
 const mysql = require('mysql');
@@ -14,8 +15,6 @@ const { uploadFileToS3, downloadFileFromS3 } = require('./aws');
 const fs = require('fs');
 const cors = require('cors');
 const https = require('https');
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
