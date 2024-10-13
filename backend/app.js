@@ -29,7 +29,7 @@ app.use(session({
     secret: process.env.SESSION_SECRET || 'your-secret-key',
     resave: false,
     saveUninitialized: true,
-    cookie: { secure: true } // Use secure cookies in production with HTTPS
+    cookie: { secure: true } 
 }));
 
 const options = {
@@ -104,8 +104,6 @@ app.post('/upload', async (req, res) => {
     const file = req.files.file;
     const encryptionKey = blowfish.generateKey();
     const s3FileKey = crypto.randomBytes(16).toString('hex');
-
-    // Use a temporary path for the uploaded file
     const uploadPath = path.join(os.tmpdir(), file.name);
 
     file.mv(uploadPath, async (err) => {
@@ -162,7 +160,6 @@ app.post('/decrypt', async (req, res) => {
                 return res.status(500).json({ message: 'Error downloading the file.' });
             }
 
-            // Clean up decrypted file after download
             fs.unlink(decryptedFilePath, (err) => {
                 if (err) console.error('Error deleting decrypted file:', err);
             });
@@ -173,23 +170,20 @@ app.post('/decrypt', async (req, res) => {
     }
 });
 
-// 404 Handler
 app.use((req, res) => {
     res.status(404).send('404 Not Found');
 });
 
-// Global Error Handler
 app.use((err, req, res, next) => {
     console.error('Something broke:', err);
     res.status(500).send('Something broke!');
 });
 
-// Root Route
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
 
-// Start HTTPS Server
+
 https.createServer(options, app).listen(PORT, () => {
     console.log(`Server is running on https://localhost:${PORT}`);
 });
