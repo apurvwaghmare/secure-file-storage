@@ -49,67 +49,38 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
 
     if (response.ok) {
         alert(message.message);
-        document.getElementById('login-form').reset();
         window.location.href = 'upload.html';
     } else {
         alert(message.message);
     }
 });
 
-document.getElementById('upload-form').addEventListener('submit', async function(event) {
-    event.preventDefault();
-    const form = document.getElementById('upload-form');
-    const formData = new FormData(form);
-    
+document.getElementById('upload-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fileInput = document.getElementById('file');
+    const emailInput = document.getElementById('email');
+
+    if (!fileInput.files.length || !emailInput.value) {
+        alert('Please upload a file and enter your email.');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+    formData.append('email', emailInput.value);
+
     const response = await fetch('/upload', {
         method: 'POST',
-        body: formData
+        body: formData,
     });
 
     const message = await response.json();
 
     if (response.ok) {
         alert(message.message);
-        setTimeout(() => {
-            window.location.href = 'decrypt.html';
-        }, 2000);
+        fileInput.value = ''; // Clear the file input
+        emailInput.value = ''; // Clear the email input
     } else {
         alert(message.message);
-    }
-});
-
-document.getElementById('decrypt-form').addEventListener('submit', async function(event) {
-    event.preventDefault();
-
-    const encryptionKey = document.getElementById('encryptionKey').value;
-    const s3FileKey = document.getElementById('s3FileKey').value;
-
-    try {
-        const response = await fetch('/decrypt', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ encryptionKey, s3FileKey }),
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Something went wrong');
-        }
-
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = 'decrypted_file.txt';
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        alert('File decrypted and downloaded successfully!');
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error decrypting the file: ' + error.message);
     }
 });
