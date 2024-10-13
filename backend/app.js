@@ -19,8 +19,8 @@ const os = require('os');
 const app = express();
 const PORT = process.env.PORT || 3000;
 app.use(cors({
-    origin: 'https://safefileshare.netlify.app', 
-    credentials: true 
+    origin: 'https://safefileshare.netlify.app',
+    credentials: true
 }));
 
 app.use(express.json());
@@ -32,7 +32,7 @@ app.use(session({
     secret: process.env.SESSION_SECRET || 'your-secret-key',
     resave: false,
     saveUninitialized: true,
-    cookie: { secure: true } 
+    cookie: { secure: true }
 }));
 
 const options = {
@@ -129,11 +129,16 @@ app.post('/upload', async (req, res) => {
                 res.status(200).json({ message: 'File uploaded and encrypted successfully! An email with your encryption key and S3 file key has been sent to the provided email.' });
             } catch (emailError) {
                 console.error('Email sending failed:', emailError);
-                return res.status(500).json({ message: 'File uploaded, but email sending failed.' });
+                return res.status(500).json({ message: 'File uploaded, but email sending failed. Please check your email configuration.' });
             }
         } catch (err) {
             console.error('Error during file processing:', err);
             res.status(500).json({ message: 'File upload failed.' });
+        } finally {
+            // Clean up uploaded file
+            fs.unlink(uploadPath, (err) => {
+                if (err) console.error('Error deleting uploaded file:', err);
+            });
         }
     });
 });
@@ -185,7 +190,6 @@ app.use((err, req, res, next) => {
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
-
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
