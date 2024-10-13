@@ -78,8 +78,7 @@ document.getElementById('upload-form')?.addEventListener('submit', async (e) => 
 
     if (response.ok) {
         alert(message.message);
-        fileInput.value = ''; // Clear the file input
-        emailInput.value = ''; // Clear the email input
+        window.location.href = 'upload.html';
     } else {
         alert(message.message);
     }
