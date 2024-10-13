@@ -78,7 +78,7 @@ document.getElementById('upload-form')?.addEventListener('submit', async (e) => 
 
     if (response.ok) {
         alert(message.message);
-        window.location.href = 'upload.html';
+        window.location.href = 'decrypt.html';
     } else {
         alert(message.message);
     }
