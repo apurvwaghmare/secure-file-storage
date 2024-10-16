@@ -178,6 +178,15 @@ app.post('/decrypt', async (req, res) => {
     }
 });
 
+app.post('/logout', (req, res) => {
+    req.session.destroy(err => {
+        if (err) {
+            return res.status(500).send('Could not log out.');
+        }
+        res.status(200).send('Logged out successfully.');
+    });
+});
+
 app.use((req, res) => {
     res.status(404).send('404 Not Found');
 });
