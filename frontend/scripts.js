@@ -101,4 +101,4 @@ document.getElementById('logoutButton').addEventListener('click', function() {
     .catch(error => {
         console.error("Error logging out:", error);
     });
-});
+}); 
