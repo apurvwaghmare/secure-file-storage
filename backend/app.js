@@ -126,9 +126,6 @@ app.post('/upload', async (req, res) => {
             `;
             try {
                 await mailer.send(email, 'Your Encryption Keys', emailContent);
-                file = null; 
-                encryptionKey = null; 
-                s3FileKey = null; 
                 res.status(200).json({ message: 'File uploaded and encrypted successfully! An email with your encryption key and S3 file key has been sent to the provided email.' });
             } catch (emailError) {
                 console.error('Email sending failed:', emailError);
