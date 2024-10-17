@@ -23,6 +23,7 @@
     "egoroof-blowfish": "^4.0.1",
     "express": "^4.21.1",
     "express-fileupload": "^1.5.1",
+    "express-mysql-session": "^3.0.3",
     "express-session": "^1.18.1",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.7.0",
