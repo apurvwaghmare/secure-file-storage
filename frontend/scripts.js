@@ -87,13 +87,12 @@ document.getElementById('upload-form')?.addEventListener('submit', async (e) => 
 document.getElementById('logoutButton').addEventListener('click', function() {
     fetch('/logout', {
         method: 'POST',
-        credentials: 'include' // Send cookies (session data) with the request
+        credentials: 'include' 
     })
     .then(response => {
         if (response.ok) {
-            // Handle successful logout
             alert("You have been logged out successfully.");
-            window.location.href = 'login.html'; // Redirect to login page
+            window.location.href = 'login.html'; 
         } else {
             alert("Logout failed. Please try again.");
         }
