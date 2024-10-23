@@ -3,15 +3,23 @@ const fs = require('fs');
 
 const encryptFile = (inputFile, outputFile, key) => {
     return new Promise((resolve, reject) => {
-        fs.readFile(inputFile, (err, data) => {
-            if (err) return reject(err);
-            const wordArray = CryptoJS.lib.WordArray.create(data);
+        const readStream = fs.createReadStream(inputFile);
+        let encryptedData = '';
+
+        readStream.on('data', (chunk) => {
+            const wordArray = CryptoJS.lib.WordArray.create(chunk);
             const encrypted = CryptoJS.Blowfish.encrypt(wordArray, key).toString();
-            fs.writeFile(outputFile, encrypted, 'utf8', (err) => {
+            encryptedData += encrypted;
+        });
+
+        readStream.on('end', () => {
+            fs.writeFile(outputFile, encryptedData, 'utf8', (err) => {
                 if (err) return reject(err);
                 resolve();
             });
         });
+
+        readStream.on('error', reject);
     });
 };
 
