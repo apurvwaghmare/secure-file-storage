@@ -11,7 +11,8 @@ const encryptFile = (inputFile, outputFile, key) => {
             transform(chunk, encoding, callback) {
                 const wordArray = CryptoJS.lib.WordArray.create(Buffer.from(chunk, 'binary'));
                 const encrypted = CryptoJS.Blowfish.encrypt(wordArray, key).toString();
-                this.push(encrypted);
+                const base64Encrypted = CryptoJS.enc.Base64.stringify(CryptoJS.enc.Utf8.parse(encrypted));
+                this.push(base64Encrypted + '\n');
                 callback();
             }
         });
@@ -24,19 +25,26 @@ const encryptFile = (inputFile, outputFile, key) => {
 
 const decryptFile = (inputFile, outputFile, key) => {
     return new Promise((resolve, reject) => {
-        fs.readFile(inputFile, { encoding: 'binary' }, (err, encryptedData) => {
-            if (err) return reject(err);
+        const readStream = fs.createReadStream(inputFile, { encoding: 'utf8' });
+        const writeStream = fs.createWriteStream(outputFile, { encoding: 'binary' });
+
+        readStream.on('data', (encryptedData) => {
             try {
-                const decrypted = CryptoJS.Blowfish.decrypt(encryptedData, key);
+                const decodedData = CryptoJS.enc.Base64.parse(encryptedData.trim());
+                const decrypted = CryptoJS.Blowfish.decrypt(decodedData, key);
                 const binaryData = Buffer.from(decrypted.toString(CryptoJS.enc.Latin1), 'binary');
-                fs.writeFile(outputFile, binaryData, { encoding: 'binary' }, (err) => {
-                    if (err) return reject(err);
-                    resolve();
-                });
+                writeStream.write(binaryData);
             } catch (error) {
-                reject(error);
+                return reject(error);
             }
         });
+
+        readStream.on('end', () => {
+            writeStream.end(() => resolve());
+        });
+
+        readStream.on('error', reject);
+        writeStream.on('error', reject);
     });
 };
 
