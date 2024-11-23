@@ -1,4 +1,3 @@
-//db.js
 const mysql = require('mysql2');
 require('dotenv').config();
 
@@ -7,18 +6,14 @@ const db = mysql.createConnection({
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-    port:3306
 });
 
-// database access granted 
 db.connect(err => {
     if (err) {
-        console.error('Database connection error:', err);
-        return;
+        console.error('Error connecting to the database:', err.message);
+    } else {
+        console.log('Connected to the MySQL database.');
     }
-    console.log('Connected to MySQL database.');
 });
 
 module.exports = db;
-
-
