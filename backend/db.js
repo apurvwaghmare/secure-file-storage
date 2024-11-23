@@ -10,7 +10,7 @@ const db = mysql.createConnection({
     port:3306
 });
 
-
+// database access granted 
 db.connect(err => {
     if (err) {
         console.error('Database connection error:', err);
