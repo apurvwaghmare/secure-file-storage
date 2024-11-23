@@ -18,6 +18,7 @@ const os = require('os');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
 app.use(cors({
     origin: 'https://safefileshare.netlify.app',
     credentials: true
@@ -35,6 +36,7 @@ app.use(session({
     cookie: { secure: true }
 }));
 
+// HTTPS certificate options (optional for local dev)
 const options = {
     key: fs.readFileSync('./localhost-key.pem'),
     cert: fs.readFileSync('./localhost.pem')
@@ -135,7 +137,6 @@ app.post('/upload', async (req, res) => {
             console.error('Error during file processing:', err);
             res.status(500).json({ message: 'File upload failed.' });
         } finally {
-            // Clean up uploaded file
             fs.unlink(uploadPath, (err) => {
                 if (err) console.error('Error deleting uploaded file:', err);
             });
@@ -152,8 +153,7 @@ app.post('/decrypt', async (req, res) => {
     }
 
     try {
-        const filePath = path.join(os.tmpdir(), `${s3FileKey}.encrypted`); // Use temp directory
-
+        const filePath = path.join(os.tmpdir(), `${s3FileKey}.encrypted`);
         const downloadResult = await downloadFileFromS3(s3FileKey, process.env.AWS_BUCKET_NAME, filePath);
         if (!downloadResult) {
             return res.status(500).json({ message: 'Failed to download the file from S3.' });
@@ -178,6 +178,7 @@ app.post('/decrypt', async (req, res) => {
     }
 });
 
+// Logout
 app.post('/logout', (req, res) => {
     req.session.destroy(err => {
         if (err) {
